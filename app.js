@@ -6,7 +6,9 @@ const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const mongoose = require('mongoose');
 
-var md5 = require('md5');
+// var md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRound = 10;
 
 mongoose.set('strictQuery', true);
 
@@ -30,41 +32,43 @@ const userModel = mongoose.model('User', userSchema);
 
 //-------------------------------------------POST-------------------------------------------
 app.post("/register", (req, res)=>{
-    const newUser = new userModel({
-        email: req.body.username,
-        password: md5(req.body.password)
+
+    bcrypt.hash(req.body.password, saltRound, function(err, hash) {
+        const newUser = new userModel({
+            email: req.body.username,
+            password: hash
+        });
+
+        newUser.save((err)=>{
+            if(!err){
+                console.log('User has been added!');
+                res.render('secrets');
+            }else{
+                console.log(err);
+            }
+        });
     });
 
-    newUser.save((err)=>{
-        if(!err){
-            console.log('User has been added!');
-            res.render('secrets');
-        }else{
-            console.log(err);
-        }
-    });
 });
 
 app.post("/login", (req, res)=>{
     const username = req.body.username;
-    const password = md5(req.body.password);
+    const password = req.body.password;
 
-    userModel.findOne(
-        {email: username}, (err, foundUser)=>{
+    userModel.findOne({email: username}, (err, foundUser)=>{
             if(foundUser){
-
-                if(foundUser.password === password){
-                    res.render('secrets');
-                }else{
-                    res.send("Wrong password!");
-                }
-                
+                bcrypt.compare(password, foundUser.password, function(err, result) { 
+                    if(result){
+                        res.render('secrets');
+                    }else{
+                        res.send("Wrong password!");
+                    }
+                });
             }else{
                 res.send("This user is not registered!");
             }
-         });
+    });
 });
-
 
 //-------------------------------------------GET-------------------------------------------
 app.get("/", (req, res)=>{
