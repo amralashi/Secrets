@@ -171,17 +171,14 @@ app.get("/register", (req, res)=>{
 
 app.get("/secrets", (req, res)=>{
   
-    if(req.isAuthenticated()){
-        User.findOne({username: req.user.username}, (err, foundUser)=>{
-          if(err){
-            console.log(err);
-          }else{
-            res.render("secrets", {h_secrets: foundUser.secrets});
-          }
-        }); 
+  User.find({secrets: {$ne: []} }, (err, foundUsers)=>{
+    if(err){
+      console.log(err);
     }else{
-        res.redirect("/");
+      res.render("secrets", {usersWithSecrets: foundUsers});
     }
+  }); 
+
 });
 
 app.get("/submit", (req, res)=>{
